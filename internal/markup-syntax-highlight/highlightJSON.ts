@@ -1,11 +1,11 @@
 import {reduceParserCore} from "./utils";
-import {tokenizeJSON} from "@internal/codec-json";
+import {json} from "@internal/codec-config";
 import {AnsiHighlightOptions, HighlightCodeResult} from "./types";
 
 export default function highlightJSON(
 	{input, path}: AnsiHighlightOptions,
 ): HighlightCodeResult {
-	const tokens = tokenizeJSON({
+	const tokens = json.tokenize({
 		input,
 		// Wont be used anywhere but activates JSON extensions if necessary
 		path,

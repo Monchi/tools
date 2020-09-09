@@ -41,11 +41,11 @@
 
 import "@internal/cli-layout";
 import {DiagnosticsError} from "@internal/diagnostics";
-import {parseJSON} from "@internal/codec-json";
+import {json} from "@internal/codec-config";
 import {test} from "rome";
 
 function parse(input: string) {
-	return parseJSON({input});
+	return json.parse({input});
 }
 
 // Copyright (c) 2012 Ecma International.  All rights reserved.

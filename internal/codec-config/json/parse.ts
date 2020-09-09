@@ -12,12 +12,12 @@ import {
 } from "@internal/diagnostics";
 import {
 	Comments,
-	JSONObject,
-	JSONParserOptions,
-	JSONParserResult,
-	JSONValue,
 	PathComments,
-	RJSONCommentMap,
+	ConfigCommentMap, ConfigParserOptions, ConfigParserResult, ConfigType,
+} from "../types";
+import {
+	JSONObject,
+	JSONValue,
 	Tokens,
 } from "./types";
 import {
@@ -28,12 +28,12 @@ import {
 import {unescapeJSONString} from "@internal/string-escape";
 import {
 	ParserCore,
-	ParserOptions,
 	Position,
 	SourceLocation,
 	createParser,
 	isAlpha,
 	isDigit,
+	ParserOptions,
 } from "@internal/parser-core";
 import {Number0, ob1Add, ob1Get0, ob1Inc, ob1Sub} from "@internal/ob1";
 import {isEscaped} from "@internal/string-utils";
@@ -120,8 +120,7 @@ type PathInfo = {
 };
 
 type State = {
-	pathToComments: RJSONCommentMap;
-	hasExtensions: boolean;
+	pathToComments: ConfigCommentMap;
 	pathKeys: ConsumePath;
 	paths: Map<string, PathInfo>;
 };
@@ -129,19 +128,20 @@ type State = {
 type JSONParserTypes = {
 	tokens: Tokens;
 	state: State;
-	options: JSONParserOptions;
-	meta: void;
+	options: ConfigParserOptions;
+	meta: {
+		type: ConfigType;
+	};
 };
+
 type JSONParser = ParserCore<JSONParserTypes>;
 
 export const createJSONParser = createParser<JSONParserTypes>({
 	diagnosticCategory: "parse/json",
 	ignoreWhitespaceTokens: true,
 	retainCarriageReturn: true,
-	getInitialState(parser) {
+	getInitialState() {
 		return {
-			hasExtensions: parser.path !== undefined &&
-			parser.path.getBasename().endsWith(".rjson"),
 			pathKeys: [],
 			paths: new Map(),
 			pathToComments: new Map(),
@@ -193,7 +193,7 @@ export const createJSONParser = createParser<JSONParserTypes>({
 			case '"': {
 				const [value, end, overflow] = parser.readInputFrom(
 					ob1Inc(index),
-					parser.state.hasExtensions
+					parser.meta.type === "rjson"
 						? isRJSONStringValueChar
 						: isJSONStringValueChar,
 				);
@@ -206,7 +206,7 @@ export const createJSONParser = createParser<JSONParserTypes>({
 				}
 
 				// Don't allow newlines in JSON
-				if (!parser.state.hasExtensions) {
+				if (parser.meta.type !== "rjson") {
 					for (let strIndex = 0; strIndex < value.length; strIndex++) {
 						const char = value[strIndex];
 
@@ -228,7 +228,7 @@ export const createJSONParser = createParser<JSONParserTypes>({
 							start: parser.getPositionFromIndex(ob1Add(index, strIndex)),
 						});
 					},
-					parser.state.hasExtensions,
+					parser.meta.type === "rjson",
 				);
 
 				// increment to take the trailing quote
@@ -483,7 +483,7 @@ function removeUnderscores(
 
 		if (char === "_") {
 			// Don't allow separators in JSON
-			if (!parser.state.hasExtensions) {
+			if (parser.meta.type !== "rjson") {
 				throw parser.unexpected({
 					description: descriptions.JSON.NUMERIC_SEPARATORS_IN_JSON,
 					start: parser.getPositionFromIndex(ob1Inc(index)),
@@ -518,7 +518,7 @@ function eatComments(parser: JSONParser): Comments {
 		}
 
 		// Comments aren't allowed in regular JSON
-		if (!parser.state.hasExtensions) {
+		if (parser.meta.type !== "rjson") {
 			throw parser.unexpected({
 				description: descriptions.JSON.COMMENTS_IN_JSON,
 			});
@@ -614,7 +614,7 @@ function eatPropertySeparator(parser: JSONParser): boolean {
 	const token = parser.getToken();
 
 	// Implicit commas are only allowed in rjson
-	if (parser.state.hasExtensions) {
+	if (parser.meta.type === "rjson") {
 		// Eat the token, don't care if we're in RJSON
 		if (token.type === "Comma") {
 			parser.nextToken();
@@ -666,7 +666,7 @@ function parseWord(parser: JSONParser, isStart: boolean): JSONValue {
 	}
 
 	if (isStart && parser.matchToken("Colon")) {
-		if (parser.state.hasExtensions) {
+		if (parser.meta.type === "rjson") {
 			return parseObject(parser, start, token.value);
 		} else {
 			throw parser.unexpected({
@@ -745,7 +745,7 @@ function parsePropertyKey(parser: JSONParser) {
 		}
 
 		case "Word":
-			if (parser.state.hasExtensions) {
+			if (parser.meta.type === "rjson") {
 				parser.nextToken();
 				return token.value;
 			} else {
@@ -764,7 +764,7 @@ function parseString(parser: JSONParser, isStart: boolean): string | JSONObject 
 	const token = parser.expectToken("String");
 
 	if (isStart && parser.nextToken().type === "Colon") {
-		if (parser.state.hasExtensions) {
+		if (parser.meta.type === "rjson") {
 			return parseObject(parser, start, token.value);
 		} else {
 			throw parser.unexpected({
@@ -808,7 +808,7 @@ function parseExpression(
 
 function parseEntry(parser: JSONParser): JSONValue {
 	if (parser.matchToken("EOF")) {
-		if (parser.state.hasExtensions) {
+		if (parser.meta.type === "rjson") {
 			// If we're in RJSON mode then an empty input is an implicit object
 			return {};
 		} else {
@@ -821,14 +821,16 @@ function parseEntry(parser: JSONParser): JSONValue {
 	}
 }
 
-export function parseJSONExtra(opts: ParserOptions): JSONParserResult {
-	const parser = createJSONParser(opts);
+export function parseJSONExtra(opts: ParserOptions, type: ConfigType, category: DiagnosticCategory): ConfigParserResult {
+	const parser = createJSONParser(opts, {
+		type,
+	});
 	const consumeDiagnosticCategory: DiagnosticCategory =
 		parser.options.consumeDiagnosticCategory ?? "parse/json";
 
 	let expectSyntaxError = false;
 
-	if (!parser.state.hasExtensions) {
+	if (parser.meta.type === "json") {
 		// If we're in regular JSON, try the native JSON.parse
 		try {
 			const value = JSON.parse(parser.input);
@@ -846,8 +848,7 @@ export function parseJSONExtra(opts: ParserOptions): JSONParserResult {
 			}
 
 			return {
-				hasExtensions: false,
-				path: parser.path,
+				type: "json",
 				comments: new Map(),
 				context: {
 					category: consumeDiagnosticCategory,
@@ -873,7 +874,7 @@ export function parseJSONExtra(opts: ParserOptions): JSONParserResult {
 		}
 	}
 
-	const res: JSONParserResult = _parse(parser, consumeDiagnosticCategory);
+	const res: ConfigParserResult = _parse(parser, consumeDiagnosticCategory);
 
 	if (expectSyntaxError) {
 		throw new Error(
@@ -887,7 +888,7 @@ export function parseJSONExtra(opts: ParserOptions): JSONParserResult {
 function _parse(
 	parser: JSONParser,
 	category: DiagnosticCategory,
-): JSONParserResult {
+): ConfigParserResult {
 	const leadingComments = eatComments(parser);
 
 	const expr = parseEntry(parser);
@@ -970,8 +971,7 @@ function _parse(
 	};
 
 	return {
-		path: parser.path,
-		hasExtensions: parser.state.hasExtensions,
+		type: parser.meta.type,
 		comments: parser.state.pathToComments,
 		value: expr,
 		context,

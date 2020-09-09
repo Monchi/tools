@@ -39,6 +39,12 @@ export type ExtensionParseInfo = ExtensionHandlerMethodInfo & {
 	path: UnknownPath;
 };
 
+export type ExtensionHandlerParseResult = {
+	sourceText: string;
+	astModifiedFromSource: boolean;
+	ast: AnyRoot;
+};
+
 export type PartialExtensionHandler = {
 	sourceTypeJS?: ConstJSSourceType;
 	isAsset?: boolean;
@@ -57,11 +63,7 @@ export type PartialExtensionHandler = {
 
 	parse: (
 		opts: ExtensionParseInfo,
-	) => Promise<{
-		sourceText: string;
-		astModifiedFromSource: boolean;
-		ast: AnyRoot;
-	}>;
+	) => Promise<ExtensionHandlerParseResult>;
 };
 
 export type ExtensionHandler = PartialExtensionHandler & {

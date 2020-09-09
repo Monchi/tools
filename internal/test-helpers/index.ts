@@ -6,7 +6,7 @@
  */
 
 import {Consumer, consumeUnknown} from "@internal/consume";
-import {consumeJSON} from "@internal/codec-json";
+import {json} from "@internal/codec-config";
 import {TestHelper, test, testOptions} from "rome";
 
 import {
@@ -33,7 +33,7 @@ async function isFile(path: AbsoluteFilePath): Promise<boolean> {
 async function getOptions(dir: AbsoluteFilePath): Promise<Consumer> {
 	const optionsLoc = dir.append("options.json");
 	const input = await readFileText(optionsLoc);
-	return consumeJSON({
+	return json.consumeValue({
 		input,
 		path: optionsLoc,
 	});
@@ -108,7 +108,7 @@ async function _getFixtures(
 		}
 	}
 
-	// If there's any directories then get the fixtures from 'all of them
+	// If there's any directories then get the fixtures from all of them
 	if (directories.size > 0) {
 		let fixtures: Array<Fixture> = [];
 

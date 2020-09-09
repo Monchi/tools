@@ -8,7 +8,11 @@ export const PROJECT_CONFIG_PACKAGE_JSON_FIELD = "rome";
 export const PROJECT_CONFIG_DIRECTORY = ".config";
 export const PROJECT_CONFIG_FILENAMES: Array<string> = [
 	"rome.json",
+	"rome.json5",
 	"rome.rjson",
+	"rome.toml",
+	"rome.yml",
+	"rome.yaml",
 ];
 export const PROJECT_CONFIG_WARN_FILENAMES: Array<string> = [
 	"romeconfig",

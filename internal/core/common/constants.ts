@@ -101,6 +101,10 @@ export const USER_CONFIG_DIRECTORY = getUserConfigDirectory();
 export const USER_CONFIG_FILENAMES: Array<string> = [
 	"config.json",
 	"config.rjson",
+	"config.json5",
+	"config.toml",
+	"config.yml",
+	"config.yaml",
 ];
 
 export const DEFAULT_USER_CONFIG_RECOVERY_DIRECTORY = USER_CONFIG_DIRECTORY.append(

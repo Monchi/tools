@@ -7,7 +7,7 @@
 
 import {ProjectConfig} from "@internal/project";
 import {AnyFilePath, UnknownPath, createUnknownPath} from "@internal/path";
-import {ExtensionHandler} from "./types";
+import {ExtensionHandler, PartialExtensionHandler} from "./types";
 import {
 	cjsHandler,
 	jsHandler,
@@ -16,12 +16,10 @@ import {
 	tsHandler,
 	tsxHandler,
 } from "./javascript";
-import {textHandler} from "./text";
-import {jsonHandler, rjsonHandler} from "./json";
-import {htmHandler, htmlHandler} from "./html";
-import {parseJS} from "@internal/js-parser";
+import {htmlHandler} from "./html";
 import {DiagnosticLanguage} from "@internal/diagnostics";
 import {markdownHandler} from "@internal/core/common/file-handlers/markdown";
+import {assetHandler, configHandler} from "@internal/core/common/file-handlers/base";
 
 type ExtensionsMap = Map<string, ExtensionHandler>;
 
@@ -80,7 +78,7 @@ export function getFileHandlerFromPath(
 		projectConfig !== undefined &&
 		projectConfig.files.assetExtensions.includes(ext)
 	) {
-		handler = assetHandler;
+		handler = {ext, ...assetHandler};
 	}
 
 	return {ext, handler};
@@ -99,38 +97,13 @@ export function getFileHandlerFromPathAssert(
 	}
 }
 
-export const ASSET_EXPORT_TEMPORARY_VALUE = "VALUE_INJECTED_BY_BUNDLER";
-
-const assetHandler: ExtensionHandler = {
-	// analyzeDependencies shim
-	...textHandler,
-	ext: "unknown",
-	canHaveScale: true,
-	isAsset: true,
-
-	async parse({path}) {
-		// This exists just so analyzeDependencies has something to look at
-		// When bundling we'll have custom logic in the compiler to handle assets and inject the correct string
-		const sourceText = `export default '${ASSET_EXPORT_TEMPORARY_VALUE}';`;
-
-		return {
-			// Shouldn't error
-			ast: parseJS({input: sourceText, sourceType: "module", path}),
-			astModifiedFromSource: true,
-			sourceText,
-		};
-	},
-};
-
 // Extensions that have a `lint` handler
 export const LINTABLE_EXTENSIONS: Array<string> = [];
 
 // Extensions that have a `format` handler
 export const FORMATTABLE_EXTENSIONS: Array<string> = [];
 
-function setHandler(handler: ExtensionHandler) {
-	const {ext} = handler;
-
+function setHandler(ext: string, handler: PartialExtensionHandler) {
 	if (handler.capabilities.lint || handler.capabilities.format) {
 		LINTABLE_EXTENSIONS.push(ext);
 	}
@@ -139,7 +112,7 @@ function setHandler(handler: ExtensionHandler) {
 		FORMATTABLE_EXTENSIONS.push(ext);
 	}
 
-	DEFAULT_HANDLERS.set(ext, handler);
+	DEFAULT_HANDLERS.set(ext, {...handler, ext});
 }
 
 const DEFAULT_HANDLERS: ExtensionsMap = new Map();
@@ -166,23 +139,43 @@ const DEFAULT_ASSET_EXTENSIONS = [
 	"eot",
 	"ttf",
 	"otf",
-	// YAML
-	"yml",
-	"yaml",
 ];
 
 for (const ext of DEFAULT_ASSET_EXTENSIONS) {
-	setHandler({...assetHandler, ext});
+	setHandler(ext, assetHandler);
 }
 
-setHandler(jsHandler);
-setHandler(jsxHandler);
-setHandler(cjsHandler);
-setHandler(mjsHandler);
-setHandler(tsHandler);
-setHandler(tsxHandler);
-setHandler(jsonHandler);
-setHandler(rjsonHandler);
-setHandler(htmlHandler);
-setHandler(htmHandler);
-setHandler(markdownHandler);
+setHandler("js", jsHandler);
+setHandler("jsx", jsxHandler);
+setHandler("cjs", cjsHandler);
+setHandler("mjs", mjsHandler);
+setHandler("ts", tsHandler);
+setHandler("tsx", tsxHandler);
+setHandler("html", htmlHandler);
+setHandler("htm", htmlHandler);
+setHandler("markdown", markdownHandler);
+
+// Config
+
+const jsonHandler: PartialExtensionHandler = {
+	...configHandler,
+	language: "json",
+};
+setHandler("json", jsonHandler);
+setHandler("json5", jsonHandler);
+setHandler("rjson", jsonHandler);
+
+const yamlHandler: PartialExtensionHandler = {
+	...configHandler,
+	language: "yaml",
+	hasTabs: false,
+};
+setHandler("yaml", yamlHandler);
+setHandler("yml", yamlHandler);
+
+const tomlHandler: PartialExtensionHandler = {
+	...configHandler,
+	language: "toml",
+};
+setHandler("toml", tomlHandler);
+setHandler("ini", tomlHandler);

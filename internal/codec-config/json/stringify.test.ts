@@ -7,16 +7,16 @@
 
 import "@internal/core";
 import {
-	consumeJSONExtra,
-	stringifyRJSONFromConsumer,
-} from "@internal/codec-json";
+	json,
+	rjson,
+} from "@internal/codec-config";
 import {test} from "rome";
 import {ParserOptions} from "@internal/parser-core";
 import {createUnknownPath} from "@internal/path";
 import {Dict} from "@internal/typescript-helpers";
 
 function consumeExtJSON(opts: ParserOptions) {
-	return consumeJSONExtra({
+	return json.consume({
 		...opts,
 		path: createUnknownPath("input.rjson"),
 	});
@@ -26,19 +26,19 @@ test(
 	"arrays",
 	(t) => {
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(consumeExtJSON({input: "[]"})),
+			rjson.stringifyFromConsumer(consumeExtJSON({input: "[]"})),
 			"[]",
 		);
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(consumeExtJSON({input: "[1]"})),
+			rjson.stringifyFromConsumer(consumeExtJSON({input: "[1]"})),
 			"[\n\t1\n]",
 		);
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(consumeExtJSON({input: "[1,]"})),
+			rjson.stringifyFromConsumer(consumeExtJSON({input: "[1,]"})),
 			"[\n\t1\n]",
 		);
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(consumeExtJSON({input: "[1, 2, 3]"})),
+			rjson.stringifyFromConsumer(consumeExtJSON({input: "[1, 2, 3]"})),
 			"[\n\t1\n\t2\n\t3\n]",
 		);
 	},
@@ -48,11 +48,11 @@ test(
 	"booleans",
 	(t) => {
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(consumeExtJSON({input: "true"})),
+			rjson.stringifyFromConsumer(consumeExtJSON({input: "true"})),
 			"true",
 		);
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(consumeExtJSON({input: "false"})),
+			rjson.stringifyFromConsumer(consumeExtJSON({input: "false"})),
 			"false",
 		);
 	},
@@ -62,29 +62,29 @@ test(
 	"numbers",
 	(t) => {
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(consumeExtJSON({input: "1"})),
+			rjson.stringifyFromConsumer(consumeExtJSON({input: "1"})),
 			"1",
 		);
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(consumeExtJSON({input: "12"})),
+			rjson.stringifyFromConsumer(consumeExtJSON({input: "12"})),
 			"12",
 		);
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(consumeExtJSON({input: "123"})),
+			rjson.stringifyFromConsumer(consumeExtJSON({input: "123"})),
 			"123",
 		);
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(consumeExtJSON({input: "123.45"})),
+			rjson.stringifyFromConsumer(consumeExtJSON({input: "123.45"})),
 			"123.45",
 		);
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(
+			rjson.stringifyFromConsumer(
 				consumeExtJSON({input: "1.2341234123412341e+27"}),
 			),
 			"1.2341234123412341e+27",
 		);
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(
+			rjson.stringifyFromConsumer(
 				consumeExtJSON({input: "1.2341234123412341E+27"}),
 			),
 			"1.2341234123412341e+27",
@@ -96,21 +96,21 @@ test(
 	"null",
 	(t) => {
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(consumeExtJSON({input: "null"})),
+			rjson.stringifyFromConsumer(consumeExtJSON({input: "null"})),
 			"null",
 		);
 
 		const funcToNull = consumeExtJSON({input: "1"});
 		funcToNull.consumer.setValue(() => {});
-		t.inlineSnapshot(stringifyRJSONFromConsumer(funcToNull), "null");
+		t.inlineSnapshot(rjson.stringifyFromConsumer(funcToNull), "null");
 
 		const undefinedToNull = consumeExtJSON({input: "1"});
 		undefinedToNull.consumer.setValue(undefined);
-		t.inlineSnapshot(stringifyRJSONFromConsumer(undefinedToNull), "null");
+		t.inlineSnapshot(rjson.stringifyFromConsumer(undefinedToNull), "null");
 
 		const NaNToNull = consumeExtJSON({input: "1"});
 		NaNToNull.consumer.setValue(NaN);
-		t.inlineSnapshot(stringifyRJSONFromConsumer(NaNToNull), "NaN");
+		t.inlineSnapshot(rjson.stringifyFromConsumer(NaNToNull), "NaN");
 	},
 );
 
@@ -118,19 +118,19 @@ test(
 	"objects",
 	(t) => {
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(consumeExtJSON({input: "{}"})),
+			rjson.stringifyFromConsumer(consumeExtJSON({input: "{}"})),
 			"{}",
 		);
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(consumeExtJSON({input: '{"foo":"bar"}'})),
+			rjson.stringifyFromConsumer(consumeExtJSON({input: '{"foo":"bar"}'})),
 			'foo: "bar"',
 		);
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(consumeExtJSON({input: '{"foo":"bar",}'})),
+			rjson.stringifyFromConsumer(consumeExtJSON({input: '{"foo":"bar",}'})),
 			'foo: "bar"',
 		);
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(
+			rjson.stringifyFromConsumer(
 				consumeExtJSON({input: '{"foo":"bar", "bar": "foo"}'}),
 			),
 			'bar: "foo"\nfoo: "bar"',
@@ -141,7 +141,7 @@ test(
 		ret.consumer.get("foo").setValue("bar");
 		ret.consumer.get("func").setValue(function() {});
 		ret.consumer.get("undef").setValue(undefined);
-		t.inlineSnapshot(stringifyRJSONFromConsumer(ret), 'foo: "bar"');
+		t.inlineSnapshot(rjson.stringifyFromConsumer(ret), 'foo: "bar"');
 	},
 );
 
@@ -165,7 +165,7 @@ test(
 	(t) => {
 		const consumer = consumeExtJSON({input: complexTest});
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(consumer),
+			rjson.stringifyFromConsumer(consumer),
 			'// root comment\n/* and another!*/\nfoo: {\n\t// comment before property\n\tbar: {\n\t\tnested: true\n}\n\tgreat: 1.233e+58\n\tyes: null\n}\n// hello!\nhello: [\n\t// comment before element\n\t"world"\n\t2\n\t3.53\n]',
 		);
 	},
@@ -175,11 +175,11 @@ test(
 	"comments",
 	(t) => {
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(consumeExtJSON({input: "// foo\ntrue"})),
+			rjson.stringifyFromConsumer(consumeExtJSON({input: "// foo\ntrue"})),
 			"// foo\ntrue",
 		);
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(consumeExtJSON({input: "true\n// foo"})),
+			rjson.stringifyFromConsumer(consumeExtJSON({input: "true\n// foo"})),
 			"// foo\ntrue",
 		);
 
@@ -187,7 +187,7 @@ test(
 
 		// comments at end of object
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(
+			rjson.stringifyFromConsumer(
 				consumeExtJSON({
 					input: `{
     "foo": "bar",
@@ -199,7 +199,7 @@ test(
 		);
 		// comments at end of array
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(
+			rjson.stringifyFromConsumer(
 				consumeExtJSON({
 					input: `[
     "foobar",
@@ -211,7 +211,7 @@ test(
 		);
 		// comments in empty array
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(
+			rjson.stringifyFromConsumer(
 				consumeExtJSON({
 					input: `[
     // inner comment
@@ -222,7 +222,7 @@ test(
 		);
 		// comments in empty object
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(
+			rjson.stringifyFromConsumer(
 				consumeExtJSON({
 					input: `{
     // inner comment
@@ -236,7 +236,7 @@ test(
 
 		// before property
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(
+			rjson.stringifyFromConsumer(
 				consumeExtJSON({
 					input: `{
     /* bar */
@@ -248,7 +248,7 @@ test(
 		);
 		// before value
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(
+			rjson.stringifyFromConsumer(
 				consumeExtJSON({
 					input: `{
     "foo": /* bar */ "bar",
@@ -259,7 +259,7 @@ test(
 		);
 		// after value
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(
+			rjson.stringifyFromConsumer(
 				consumeExtJSON({
 					input: `{
     "foo": "bar" /* bar */,
@@ -273,7 +273,7 @@ test(
 
 		// before element
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(
+			rjson.stringifyFromConsumer(
 				consumeExtJSON({
 					input: `[
     /* bar */
@@ -285,7 +285,7 @@ test(
 		);
 		// after value
 		t.inlineSnapshot(
-			stringifyRJSONFromConsumer(
+			rjson.stringifyFromConsumer(
 				consumeExtJSON({
 					input: `[
     "foo" /* bar */,
@@ -305,7 +305,7 @@ test(
 			const foo: Dict<unknown> = {};
 			foo.bar = foo;
 			ret.consumer.get("foo").setValue(foo);
-			stringifyRJSONFromConsumer(ret);
+			rjson.stringifyFromConsumer(ret);
 		});
 	},
 );
