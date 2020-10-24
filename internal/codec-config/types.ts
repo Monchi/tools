@@ -7,20 +7,24 @@
 
 import {ConsumeContext, Consumer} from "@internal/consume";
 import {ParserOptions, TokenBase} from "@internal/parser-core";
-import {DiagnosticCategory} from "@internal/diagnostics";
+import {DiagnosticCategory, DiagnosticLanguage} from "@internal/diagnostics";
 import {JSONValue} from "@internal/codec-config/json/types";
-import {AnyFilePath} from "@internal/path";
 
 export type ConfigParserOptions = Omit<ParserOptions, "retainCarriageReturn"> & {
 	consumeDiagnosticCategory?: DiagnosticCategory;
 };
 
-export type ConfigType = "rjson" | "json" | "yaml" | "toml";
+export type JSONConfigType = "rjson" | "json" | "json5" | "yaml";
 
-export type ConsumeConfigResult = {
-	type: ConfigType;
+export type ConfigType = JSONConfigType | "toml";
+
+export type PartialConsumeConfigResult = {
 	consumer: Consumer;
 	comments: ConfigCommentMap;
+};
+
+export type ConsumeConfigResult = PartialConsumeConfigResult & {
+	type: ConfigType;
 };
 
 export type PathComments = {
@@ -49,7 +53,18 @@ export type ConfigParserResult = {
 	comments: ConfigCommentMap;
 };
 
-export type ConfigTypeMethods = PartialConfigTypeMethods & {
+export type PartialConfigHandler = {
+	type: ConfigType;
+	language: DiagnosticLanguage;
+	consumeCategory: DiagnosticCategory;
+	jsonSuperset: boolean;
+	extensions: Array<string>;
+	parseExtra: (opts: ParserOptions) => ConfigParserResult,
+	tokenize: (opts: ConfigParserOptions) => Array<TokenBase & {value?: unknown}>,
+	stringifyFromConsumer: (opts: PartialConsumeConfigResult) => string,
+};
+
+export type ConfigHandler = PartialConfigHandler & {
 	consumeValue: (opts: ConfigParserOptions) => Consumer,
 	consume: (opts: ConfigParserOptions) => ConsumeConfigResult,
 	parse: (opts: ParserOptions) => unknown,
@@ -57,11 +72,4 @@ export type ConfigTypeMethods = PartialConfigTypeMethods & {
 		value: unknown,
 		comments?: ConfigCommentMap,
 	) => string,
-};
-
-export type PartialConfigTypeMethods = {
-	isPath: (path: AnyFilePath) => boolean,
-	parseExtra: (opts: ParserOptions) => ConfigParserResult,
-	tokenize: (opts: ConfigParserOptions) => Array<TokenBase & {value?: unknown}>,
-	stringifyFromConsumer: (opts: ConsumeConfigResult) => string,
 };

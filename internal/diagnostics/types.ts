@@ -57,6 +57,8 @@ export type DiagnosticLogCategory = "none" | "info" | "warn" | "error";
 
 export type DiagnosticLanguage =
 	| "json"
+	| "rjson"
+	| "json5"
 	| "js"
 	| "url"
 	| "commit"

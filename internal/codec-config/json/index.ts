@@ -1,14 +1,27 @@
-import {ConsumeConfigResult} from "@internal/codec-config";
 import {createJSONParser, parseJSONExtra} from "@internal/codec-config/json/parse";
 import {TokenValues} from "@internal/parser-core";
 import {Tokens} from "./types";
 import {stringifyRootConsumer} from "./stringify";
-import {ConfigParserOptions, ConfigType, PartialConfigTypeMethods} from "@internal/codec-config/types";
-import {AnyFilePath} from "@internal/path";
+import {
+	ConfigParserOptions,
+	JSONConfigType,
+	PartialConfigHandler,
+	PartialConsumeConfigResult
+} from "@internal/codec-config/types";
 import {DiagnosticCategory} from "@internal/diagnostics";
 
-function createJSONParserMethods(type: ConfigType, parseCategory: DiagnosticCategory): Omit<PartialConfigTypeMethods, "isPath"> {
+function createJSONParserMethods(type: JSONConfigType, parseCategory: DiagnosticCategory): Omit<PartialConfigHandler, "extensions" | "language"> {
 	return {
+		type,
+		consumeCategory: parseCategory,
+		jsonSuperset: true,
+
+		stringifyFromConsumer(
+			opts: PartialConsumeConfigResult,
+		): string {
+			return stringifyRootConsumer(opts.consumer, opts.comments, type);
+		},
+
 		parseExtra(opts) {
 			return parseJSONExtra(opts, type, parseCategory);
 		},
@@ -18,52 +31,46 @@ function createJSONParserMethods(type: ConfigType, parseCategory: DiagnosticCate
 		): Array<TokenValues<Tokens>> {
 			return createJSONParser(opts, {type}, parseCategory).tokenizeAll();
 		},
-
-		stringifyFromConsumer(
-			opts: ConsumeConfigResult,
-		): string {
-			const val = opts.consumer.asUnknown();
-			const serial = JSON.stringify(val, null, "\t");
-			if (serial === undefined) {
-				return "undefined";
-			} else {
-				return serial;
-			}
-		},
 	};
 }
 
-export const json: PartialConfigTypeMethods = {
-	isPath(path: AnyFilePath): boolean {
-		return path.hasExtension("json") || path.hasExtension("json5");
-	},
+export const json: PartialConfigHandler = {
+	extensions: ["json"],
+	language: "json",
+	...createJSONParserMethods("json", "parse/json"),
 
+	stringifyFromConsumer(
+		opts: PartialConsumeConfigResult,
+	): string {
+		const val = opts.consumer.asUnknown();
+		const serial = JSON.stringify(val, null, "\t");
+		if (serial === undefined) {
+			return "undefined";
+		} else {
+			return serial;
+		}
+	},
+};
+
+export const json5: PartialConfigHandler = {
+	extensions: ["json5"],
+	language: "json5",
 	...createJSONParserMethods("json", "parse/json"),
 };
 
-export const rjson: PartialConfigTypeMethods = {
+export const rjson: PartialConfigHandler = {
 	...createJSONParserMethods("rjson", "parse/json"),
-
-	isPath(path: AnyFilePath): boolean {
-		return path.hasExtension("rjson");
-	},
-
-	stringifyFromConsumer(
-		opts: ConsumeConfigResult,
-	): string {
-		return stringifyRootConsumer(opts.consumer, opts.comments);
-	},
+	extensions: ["rjson"],
+	language: "rjson",
 };
 
-export const yaml: PartialConfigTypeMethods = {
+export const yaml: PartialConfigHandler = {
 	...createJSONParserMethods("yaml", "parse/yaml"),
-
-	isPath(path: AnyFilePath): boolean {
-		return path.hasExtension("yaml") || path.hasExtension("yml");
-	},
+	extensions: ["yaml", "yml"],
+	language: "yaml",
 
 	stringifyFromConsumer(
-		opts: ConsumeConfigResult,
+		opts: PartialConsumeConfigResult,
 	): string {
 		throw new Error("todo");
 	},

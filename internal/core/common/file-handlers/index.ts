@@ -20,6 +20,7 @@ import {htmlHandler} from "./html";
 import {DiagnosticLanguage} from "@internal/diagnostics";
 import {markdownHandler} from "@internal/core/common/file-handlers/markdown";
 import {assetHandler, configHandler} from "@internal/core/common/file-handlers/base";
+import {CONFIG_HANDLERS} from "@internal/codec-config";
 
 type ExtensionsMap = Map<string, ExtensionHandler>;
 
@@ -157,25 +158,11 @@ setHandler("markdown", markdownHandler);
 
 // Config
 
-const jsonHandler: PartialExtensionHandler = {
-	...configHandler,
-	language: "json",
-};
-setHandler("json", jsonHandler);
-setHandler("json5", jsonHandler);
-setHandler("rjson", jsonHandler);
-
-const yamlHandler: PartialExtensionHandler = {
-	...configHandler,
-	language: "yaml",
-	hasTabs: false,
-};
-setHandler("yaml", yamlHandler);
-setHandler("yml", yamlHandler);
-
-const tomlHandler: PartialExtensionHandler = {
-	...configHandler,
-	language: "toml",
-};
-setHandler("toml", tomlHandler);
-setHandler("ini", tomlHandler);
+for (const handler of CONFIG_HANDLERS) {
+	for (const ext of handler.extensions) {
+		setHandler(ext, {
+			...configHandler,
+			language: handler.language,
+		});
+	}
+}

@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import {Comments, PathComments, ConfigCommentMap} from "../types";
+import {Comments, PathComments, ConfigCommentMap, JSONConfigType} from "../types";
 import {naturalCompare} from "@internal/string-utils";
 import {isValidWord} from "./parse";
 import {Consumer} from "@internal/consume";
@@ -299,6 +299,7 @@ function stringifyObject(
 export function stringifyRootConsumer(
 	consumer: Consumer,
 	pathToComments: ConfigCommentMap,
+	type: JSONConfigType,
 ): string {
 	const opts: StringifyOptions = {
 		comments: pathToComments,

@@ -1,9 +1,11 @@
 import {reduceParserCore} from "./utils";
 import {json} from "@internal/codec-config";
 import {AnsiHighlightOptions, HighlightCodeResult} from "./types";
+import {ConfigHandler} from "@internal/codec-config/types";
 
 export default function highlightJSON(
 	{input, path}: AnsiHighlightOptions,
+	handler: ConfigHandler,
 ): HighlightCodeResult {
 	const tokens = json.tokenize({
 		input,

@@ -1,16 +1,16 @@
-import {ConsumeConfigResult} from "@internal/codec-config";
 import {
 	ConfigParserOptions,
 	ConfigParserResult,
-	PartialConfigTypeMethods
+	PartialConfigHandler, PartialConsumeConfigResult
 } from "@internal/codec-config/types";
 import {ParserOptions, TokenBase} from "@internal/parser-core";
-import {AnyFilePath} from "@internal/path";
 
-export const toml: PartialConfigTypeMethods = {
-	isPath(path: AnyFilePath): boolean {
-		return path.hasExtension("toml") || path.hasExtension("ini");
-	},
+export const toml: PartialConfigHandler = {
+	type: "toml",
+	language: "toml",
+	extensions: ["toml", "ini"],
+	consumeCategory: "parse/toml",
+	jsonSuperset: false,
 
 	parseExtra(opts: ParserOptions): ConfigParserResult {
 		throw new Error("todo");
@@ -20,7 +20,7 @@ export const toml: PartialConfigTypeMethods = {
 		throw new Error("todo");
 	},
 
-	stringifyFromConsumer(opts: ConsumeConfigResult): string {
+	stringifyFromConsumer(opts: PartialConsumeConfigResult): string {
 		throw new Error("todo");
 	},
 };
