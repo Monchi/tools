@@ -60,14 +60,13 @@ const createMarkdownParser = createParser<MarkdownParserTypes>({
 
 		if (!escaped && !state.isParagraph) {
 			if (char === "#") {
-				return [state, consumeHeading(parser, index)];
+				const token = tokenizeHeading(parser, index)
+				if (token) {
+					return [state, token];
+				}
 			}
 			if (char === "\n") {
 				const nextChar = parser.getInputCharOnly(index, 1);
-				if (nextChar === "#") {
-					return [state, consumeHeading(parser, ob1Add(index, 1))];
-				}
-
 				if (nextChar === "`") {
 					const token = consumeCode(parser, ob1Add(index, 1));
 					if (token) {
@@ -214,7 +213,12 @@ const createMarkdownParser = createParser<MarkdownParserTypes>({
 	},
 });
 
-function consumeHeading(parser: MarkdownParser, index: Number0) {
+function tokenizeHeading(parser: MarkdownParser, index: Number0) {
+	const prevToken = parser.lookbehindToken();
+	if (prevToken.type !== 'NewLine' && prevToken.type !== 'SOF') {
+		return undefined;
+	}
+
 	const [value, end] = parser.readInputFrom(
 		index,
 		(char1) => {
@@ -222,8 +226,7 @@ function consumeHeading(parser: MarkdownParser, index: Number0) {
 		},
 	);
 	if (value.length > 6) {
-		const [textValue, endText] = parser.readInputFrom(end, isntLineBreak);
-		return parser.finishValueToken("Text", value + textValue, endText);
+		return undefined;
 	}
 	return parser.finishValueToken("HeadingLevel", value.length, end);
 }
