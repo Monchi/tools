@@ -420,6 +420,10 @@ export default class ParserCore<Types extends ParserCoreTypes> {
 		];
 	}
 
+	public lookbehindToken(): TokenValues<Types["tokens"]> {
+		return this.currentToken;
+	}
+
 	public getPositionFromIndex(index: Number0): Position {
 		return this.indexTracker.getPositionFromIndex(index);
 	}
